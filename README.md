@@ -29,12 +29,14 @@ A Next.js application for tracking and analyzing participation indices across di
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone <your-repo-url>
 cd participation-index-app
 ```
 
 2. Install dependencies
+
 ```bash
 pnpm install
 ```
@@ -42,12 +44,14 @@ pnpm install
 3. Environment variables are already configured in `.env`
 
 4. Set up database
+
 - Go to your Supabase SQL Editor
 - Run the scripts in order:
-  - `scripts/001_create_tables.sql`
-  - `scripts/002_fix_categories_policies.sql`
+    - `scripts/001_create_tables.sql`
+    - `scripts/002_fix_categories_policies.sql`
 
 5. Run the development server
+
 ```bash
 pnpm run dev
 ```

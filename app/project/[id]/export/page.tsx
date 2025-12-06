@@ -1,57 +1,57 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import type { Category, ChecklistItem, CategoryWithItems, ItemDetail } from "@/lib/types"
-import { PrintButton } from "@/components/print-button"
+import {createClient} from "@/lib/supabase/server"
+import {notFound} from "next/navigation"
+import type {Category, CategoryWithItems, ChecklistItem, ItemDetail} from "@/lib/types"
+import {PrintButton} from "@/components/print-button"
 
 interface PageProps {
-  params: Promise<{ id: string }>
+    params: Promise<{ id: string }>
 }
 
-export default async function ExportPage({ params }: PageProps) {
-  const { id } = await params
-  const supabase = await createClient()
+export default async function ExportPage({params}: PageProps) {
+    const {id} = await params
+    const supabase = await createClient()
 
-  // Fetch project
-  const { data: project, error: projectError } = await supabase.from("projects").select("*").eq("id", id).single()
+    // Fetch project
+    const {data: project, error: projectError} = await supabase.from("projects").select("*").eq("id", id).single()
 
-  if (projectError || !project) {
-    notFound()
-  }
+    if (projectError || !project) {
+        notFound()
+    }
 
-  // Fetch categories
-  const { data: categories } = await supabase.from("categories").select("*").order("sort_order")
+    // Fetch categories
+    const {data: categories} = await supabase.from("categories").select("*").order("sort_order")
 
-  // Fetch checklist items with their details
-  const { data: checklistItems } = await supabase
-    .from("checklist_items")
-    .select(`
+    // Fetch checklist items with their details
+    const {data: checklistItems} = await supabase
+        .from("checklist_items")
+        .select(`
       *,
       category:categories(*),
       item_details(*)
     `)
-    .eq("project_id", id)
+        .eq("project_id", id)
 
-  // Organize items by category
-  const categorizedItems: CategoryWithItems[] = (categories || []).map((category: Category) => {
-    const items = (checklistItems || []).filter((item: ChecklistItem) => item.category_id === category.id)
-    return {
-      category,
-      analogItems: items.filter((item: ChecklistItem) => item.item_type === "analog"),
-      digitalItems: items.filter((item: ChecklistItem) => item.item_type === "digital"),
-    }
-  })
+    // Organize items by category
+    const categorizedItems: CategoryWithItems[] = (categories || []).map((category: Category) => {
+        const items = (checklistItems || []).filter((item: ChecklistItem) => item.category_id === category.id)
+        return {
+            category,
+            analogItems: items.filter((item: ChecklistItem) => item.item_type === "analog"),
+            digitalItems: items.filter((item: ChecklistItem) => item.item_type === "digital"),
+        }
+    })
 
-  // Get all items with details for the detail pages (not just completed ones)
-  const itemsWithDetails = (checklistItems || []).filter(
-    (item: ChecklistItem) => item.item_details && item.item_details.length > 0,
-  )
+    // Get all items with details for the detail pages (not just completed ones)
+    const itemsWithDetails = (checklistItems || []).filter(
+        (item: ChecklistItem) => item.item_details && item.item_details.length > 0,
+    )
 
-  return (
-    <html>
-      <head>
-        <title>{project.name} - Participation Index Analysis</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>{`
+    return (
+        <html>
+        <head>
+            <title>{project.name} - Participation Index Analysis</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <style>{`
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .page-break { page-break-before: always; }
@@ -322,213 +322,234 @@ export default async function ExportPage({ params }: PageProps) {
             .detail-header { margin: -12px -12px 12px -12px; padding: 12px; }
           }
         `}</style>
-      </head>
-      <body>
-        <PrintButton />
+        </head>
+        <body>
+        <PrintButton/>
 
         <div className="container">
-          {/* Cover Page */}
-          <div className="header">
-            <h1>Participation Index Analysis</h1>
-            <p>
-              <strong>Project:</strong> {project.name}
-            </p>
-            {project.description && (
-              <p>
-                <strong>Description:</strong> {project.description}
-              </p>
-            )}
-            <p>
-              <strong>Generated:</strong> {new Date().toLocaleDateString()}
-            </p>
-          </div>
+            {/* Cover Page */}
+            <div className="header">
+                <h1>Participation Index Analysis</h1>
+                <p>
+                    <strong>Project:</strong> {project.name}
+                </p>
+                {project.description && (
+                    <p>
+                        <strong>Description:</strong> {project.description}
+                    </p>
+                )}
+                <p>
+                    <strong>Generated:</strong> {new Date().toLocaleDateString()}
+                </p>
+            </div>
 
-          {/* Page 1 - Checklist Table */}
-          <div className="section-title">Page 1 - Checklist Overview</div>
+            {/* Page 1 - Checklist Table */}
+            <div className="section-title">Page 1 - Checklist Overview</div>
 
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: "60px" }}>Category</th>
-                <th>ANALOG</th>
-                <th>DIGITAL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categorizedItems.map((categoryData) => (
-                <tr key={categoryData.category.id}>
-                  <td className="category-cell">{categoryData.category.name}</td>
-                  <td>
-                    {categoryData.analogItems.map((item) => (
-                      <div key={item.id} className="item">
-                        <span className={`check ${item.is_completed ? "completed" : ""}`}>
-                          {item.is_completed && "✓"}
-                        </span>
-                        <span>{item.title}</span>
-                      </div>
-                    ))}
-                  </td>
-                  <td>
-                    {categoryData.digitalItems.map((item) => (
-                      <div key={item.id} className="item">
-                        <span className={`check ${item.is_completed ? "completed" : ""}`}>
-                          {item.is_completed && "✓"}
-                        </span>
-                        <span>{item.title}</span>
-                      </div>
-                    ))}
-                  </td>
+            <table>
+                <thead>
+                <tr>
+                    <th style={{width: "60px"}}>Category</th>
+                    <th>ANALOG</th>
+                    <th>DIGITAL</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                {categorizedItems.map((categoryData) => (
+                    <tr key={categoryData.category.id}>
+                        <td className="category-cell">{categoryData.category.name}</td>
+                        <td>
+                            {categoryData.analogItems.map((item) => (
+                                <div key={item.id} className="item">
+                        <span className={`check ${item.is_completed ? "completed" : ""}`}>
+                          {item.is_completed && "✓"}
+                        </span>
+                                    <span>{item.title}</span>
+                                </div>
+                            ))}
+                        </td>
+                        <td>
+                            {categoryData.digitalItems.map((item) => (
+                                <div key={item.id} className="item">
+                        <span className={`check ${item.is_completed ? "completed" : ""}`}>
+                          {item.is_completed && "✓"}
+                        </span>
+                                    <span>{item.title}</span>
+                                </div>
+                            ))}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
 
-          {/* Formula Reference */}
-          <div className="formula-box">
-            <div className="detail-label">Participation Index Formula</div>
-            <div className="formula">PI = [ (fvh × 1) + (fh × 0.8) + (fn × 0.6) + (fl × 0.4) + (fvl × 0.2) ] / N</div>
-          </div>
+            {/* Formula Reference */}
+            <div className="formula-box">
+                <div className="detail-label">Participation Index Formula</div>
+                <div className="formula">PI = [ (fvh × 1) + (fh × 0.8) + (fn × 0.6) + (fl × 0.4) + (fvl × 0.2) ] / N
+                </div>
+            </div>
 
-          {/* Detail Pages for Items with Details */}
-          {itemsWithDetails.length > 0 && (
-            <>
-              <div className="page-break"></div>
-              <div className="section-title">Item Details</div>
+            {/* Detail Pages for Items with Details */}
+            {itemsWithDetails.length > 0 && (
+                <>
+                    <div className="page-break"></div>
+                    <div className="section-title">Item Details</div>
 
-              {itemsWithDetails.map((item: ChecklistItem) => {
-                const detail = item.item_details?.[0] as ItemDetail | undefined
-                if (!detail) return null
+                    {itemsWithDetails.map((item: ChecklistItem) => {
+                        const detail = item.item_details?.[0] as ItemDetail | undefined
+                        if (!detail) return null
 
-                return (
-                  <div key={item.id} className="detail-card">
-                    <div className="detail-header">
-                      <h3>{item.title}</h3>
-                      <div className="category">
-                        {item.category?.name} - {item.item_type?.toUpperCase()}
-                      </div>
-                    </div>
+                        return (
+                            <div key={item.id} className="detail-card">
+                                <div className="detail-header">
+                                    <h3>{item.title}</h3>
+                                    <div className="category">
+                                        {item.category?.name} - {item.item_type?.toUpperCase()}
+                                    </div>
+                                </div>
 
-                    {item.description && (
-                      <div style={{ marginBottom: "16px" }}>
-                        <div className="detail-label">Description</div>
-                        <div className="detail-value" style={{ whiteSpace: "pre-wrap" }}>{item.description}</div>
-                      </div>
-                    )}
+                                {item.description && (
+                                    <div style={{marginBottom: "16px"}}>
+                                        <div className="detail-label">Description</div>
+                                        <div className="detail-value"
+                                             style={{whiteSpace: "pre-wrap"}}>{item.description}</div>
+                                    </div>
+                                )}
 
-                    {detail.activity && (
-                      <div style={{ marginBottom: "16px" }}>
-                        <div className="detail-label">Activity</div>
-                        <div className="detail-value">{detail.activity}</div>
-                      </div>
-                    )}
+                                {detail.activity && (
+                                    <div style={{marginBottom: "16px"}}>
+                                        <div className="detail-label">Activity</div>
+                                        <div className="detail-value">{detail.activity}</div>
+                                    </div>
+                                )}
 
-                    {/* Images */}
-                    {(detail.image1_url || detail.image2_url || detail.image3_url || detail.image4_url) && (
-                      <>
-                        <div className="detail-label" style={{ marginTop: "20px", fontSize: "14px" }}>Images</div>
-                        <div className="images-grid">
-                          <div className="image-box">
-                            {detail.image1_url ? (
-                              <img src={detail.image1_url || "/placeholder.svg"} alt="Image 1" />
-                            ) : (
-                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
-                            )}
-                          </div>
-                          <div className="image-box">
-                            {detail.image2_url ? (
-                              <img src={detail.image2_url || "/placeholder.svg"} alt="Image 2" />
-                            ) : (
-                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
-                            )}
-                          </div>
-                          <div className="image-box">
-                            {detail.image3_url ? (
-                              <img src={detail.image3_url || "/placeholder.svg"} alt="Image 3" />
-                            ) : (
-                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
-                            )}
-                          </div>
-                          <div className="image-box">
-                            {detail.image4_url ? (
-                              <img src={detail.image4_url || "/placeholder.svg"} alt="Image 4" />
-                            ) : (
-                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
+                                {/* Images */}
+                                {(detail.image1_url || detail.image2_url || detail.image3_url || detail.image4_url) && (
+                                    <>
+                                        <div className="detail-label"
+                                             style={{marginTop: "20px", fontSize: "14px"}}>Images
+                                        </div>
+                                        <div className="images-grid">
+                                            <div className="image-box">
+                                                {detail.image1_url ? (
+                                                    <img src={detail.image1_url || "/placeholder.svg"} alt="Image 1"/>
+                                                ) : (
+                                                    <div style={{
+                                                        color: "#92400e",
+                                                        fontSize: "12px",
+                                                        textAlign: "center"
+                                                    }}>No image</div>
+                                                )}
+                                            </div>
+                                            <div className="image-box">
+                                                {detail.image2_url ? (
+                                                    <img src={detail.image2_url || "/placeholder.svg"} alt="Image 2"/>
+                                                ) : (
+                                                    <div style={{
+                                                        color: "#92400e",
+                                                        fontSize: "12px",
+                                                        textAlign: "center"
+                                                    }}>No image</div>
+                                                )}
+                                            </div>
+                                            <div className="image-box">
+                                                {detail.image3_url ? (
+                                                    <img src={detail.image3_url || "/placeholder.svg"} alt="Image 3"/>
+                                                ) : (
+                                                    <div style={{
+                                                        color: "#92400e",
+                                                        fontSize: "12px",
+                                                        textAlign: "center"
+                                                    }}>No image</div>
+                                                )}
+                                            </div>
+                                            <div className="image-box">
+                                                {detail.image4_url ? (
+                                                    <img src={detail.image4_url || "/placeholder.svg"} alt="Image 4"/>
+                                                ) : (
+                                                    <div style={{
+                                                        color: "#92400e",
+                                                        fontSize: "12px",
+                                                        textAlign: "center"
+                                                    }}>No image</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
-                    {/* Participation Table */}
-                    <table className="participation-table">
-                      <thead>
-                        <tr>
-                          <th>Total (N)</th>
-                          <th>Attend (fa)</th>
-                          <th>Consult (fc)</th>
-                          <th>Involve (fi)</th>
-                          <th>Collaborate (fcol)</th>
-                          <th>Empower (femp)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>{detail.total_participation_n ?? "-"}</td>
-                          <td>{detail.attend_fa ?? "-"}</td>
-                          <td>{detail.consult_fc ?? "-"}</td>
-                          <td>{detail.involve_fi ?? "-"}</td>
-                          <td>{detail.collaborate_fcol ?? "-"}</td>
-                          <td>{detail.empower_femp ?? "-"}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                                {/* Participation Table */}
+                                <table className="participation-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Total (N)</th>
+                                        <th>Attend (fa)</th>
+                                        <th>Consult (fc)</th>
+                                        <th>Involve (fi)</th>
+                                        <th>Collaborate (fcol)</th>
+                                        <th>Empower (femp)</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>{detail.total_participation_n ?? "-"}</td>
+                                        <td>{detail.attend_fa ?? "-"}</td>
+                                        <td>{detail.consult_fc ?? "-"}</td>
+                                        <td>{detail.involve_fi ?? "-"}</td>
+                                        <td>{detail.collaborate_fcol ?? "-"}</td>
+                                        <td>{detail.empower_femp ?? "-"}</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
 
-                    {/* PI Result */}
-                    {detail.calculated_pi !== null && (
-                      <div className="formula-box">
-                        <div className="detail-label">Calculated Participation Index</div>
-                        <div className="pi-result">PI = {detail.calculated_pi?.toFixed(4)}</div>
-                      </div>
-                    )}
+                                {/* PI Result */}
+                                {detail.calculated_pi !== null && (
+                                    <div className="formula-box">
+                                        <div className="detail-label">Calculated Participation Index</div>
+                                        <div className="pi-result">PI = {detail.calculated_pi?.toFixed(4)}</div>
+                                    </div>
+                                )}
 
-                    {/* Additional Info */}
-                    <div className="detail-grid" style={{ marginTop: "16px" }}>
-                      {detail.assumptions && (
-                        <div>
-                          <div className="detail-label">Assumptions</div>
-                          <div className="detail-value">{detail.assumptions}</div>
-                        </div>
-                      )}
-                      {detail.data_collected_by && (
-                        <div>
-                          <div className="detail-label">Data Collected By</div>
-                          <div className="detail-value">{detail.data_collected_by}</div>
-                        </div>
-                      )}
-                      {detail.collection_date && (
-                        <div>
-                          <div className="detail-label">Collection Date</div>
-                          <div className="detail-value">{new Date(detail.collection_date).toLocaleDateString()}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </>
-          )}
+                                {/* Additional Info */}
+                                <div className="detail-grid" style={{marginTop: "16px"}}>
+                                    {detail.assumptions && (
+                                        <div>
+                                            <div className="detail-label">Assumptions</div>
+                                            <div className="detail-value">{detail.assumptions}</div>
+                                        </div>
+                                    )}
+                                    {detail.data_collected_by && (
+                                        <div>
+                                            <div className="detail-label">Data Collected By</div>
+                                            <div className="detail-value">{detail.data_collected_by}</div>
+                                        </div>
+                                    )}
+                                    {detail.collection_date && (
+                                        <div>
+                                            <div className="detail-label">Collection Date</div>
+                                            <div
+                                                className="detail-value">{new Date(detail.collection_date).toLocaleDateString()}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </>
+            )}
         </div>
 
         <script
-          dangerouslySetInnerHTML={{
-            __html: `
+            dangerouslySetInnerHTML={{
+                __html: `
           document.querySelector('.print-btn').addEventListener('click', function() {
             window.print();
           });
         `,
-          }}
+            }}
         />
-      </body>
-    </html>
-  )
+        </body>
+        </html>
+    )
 }
