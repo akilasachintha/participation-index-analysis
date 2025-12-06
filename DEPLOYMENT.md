@@ -50,6 +50,7 @@ If you haven't already, run the SQL scripts in your Supabase SQL Editor:
 2. Navigate to SQL Editor
 3. Run `scripts/001_create_tables.sql`
 4. Run `scripts/002_fix_categories_policies.sql`
+5. Run `scripts/003_add_project_image.sql`
 
 ### Free Tier Limits
 - **Vercel**: Unlimited deployments, 100GB bandwidth/month

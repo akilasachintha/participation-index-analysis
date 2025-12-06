@@ -31,12 +31,14 @@ export interface ItemDetail {
   activity: string | null
   image1_url: string | null
   image2_url: string | null
+  image3_url: string | null
+  image4_url: string | null
   total_participation_n: number | null
-  very_high_participation_fvh: number | null
-  high_participation_fh: number | null
-  normal_participation_fn: number | null
-  low_participation_fl: number | null
-  very_low_participation_fvl: number | null
+  attend_fa: number | null
+  consult_fc: number | null
+  involve_fi: number | null
+  collaborate_fcol: number | null
+  empower_femp: number | null
   calculated_pi: number | null
   assumptions: string | null
   data_collected_by: string | null

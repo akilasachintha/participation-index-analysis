@@ -29,60 +29,97 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
   const [activity, setActivity] = useState(existingDetails?.activity || "")
   const [image1, setImage1] = useState<File | null>(null)
   const [image2, setImage2] = useState<File | null>(null)
+  const [image3, setImage3] = useState<File | null>(null)
+  const [image4, setImage4] = useState<File | null>(null)
   const [image1Preview, setImage1Preview] = useState<string | null>(existingDetails?.image1_url || null)
   const [image2Preview, setImage2Preview] = useState<string | null>(existingDetails?.image2_url || null)
+  const [image3Preview, setImage3Preview] = useState<string | null>(existingDetails?.image3_url || null)
+  const [image4Preview, setImage4Preview] = useState<string | null>(existingDetails?.image4_url || null)
 
   // Participation values - initialized from existingDetails
-  const [totalN, setTotalN] = useState(existingDetails?.total_participation_n?.toString() || "")
-  const [fvh, setFvh] = useState(existingDetails?.very_high_participation_fvh?.toString() || "")
-  const [fh, setFh] = useState(existingDetails?.high_participation_fh?.toString() || "")
-  const [fn, setFn] = useState(existingDetails?.normal_participation_fn?.toString() || "")
-  const [fl, setFl] = useState(existingDetails?.low_participation_fl?.toString() || "")
-  const [fvl, setFvl] = useState(existingDetails?.very_low_participation_fvl?.toString() || "")
+  // Variable mapping to database columns:
+  // fa (Attend) -> attend_fa
+  // fc (Consult) -> consult_fc
+  // fi (Work/Involve) -> involve_fi
+  // fcol (Collaborate) -> collaborate_fcol
+  // femp (Empower/Lead) -> empower_femp
+  const [fa, setFa] = useState(existingDetails?.attend_fa?.toString() || "")
+  const [fc, setFc] = useState(existingDetails?.consult_fc?.toString() || "")
+  const [fi, setFi] = useState(existingDetails?.involve_fi?.toString() || "")
+  const [fcol, setFcol] = useState(existingDetails?.collaborate_fcol?.toString() || "")
+  const [femp, setFemp] = useState(existingDetails?.empower_femp?.toString() || "")
 
   const [assumptions, setAssumptions] = useState(existingDetails?.assumptions || "")
   const [collectedBy, setCollectedBy] = useState(existingDetails?.data_collected_by || "")
   const [collectionDate, setCollectionDate] = useState(existingDetails?.collection_date || "")
 
-  // Calculate PI
+  // Calculate total N from the 5 activity frequencies
+  const calculateTotalN = useCallback(() => {
+    const attend = Number.parseFloat(fa) || 0
+    const consult = Number.parseFloat(fc) || 0
+    const workInvolve = Number.parseFloat(fi) || 0
+    const collaborate = Number.parseFloat(fcol) || 0
+    const empower = Number.parseFloat(femp) || 0
+    return attend + consult + workInvolve + collaborate + empower
+  }, [fa, fc, fi, fcol, femp])
+
+  // Calculate PI using the new formula: PI = [(fa × 0.2) + (fc × 0.4) + (fi × 0.6) + (fcol × 0.8) + (femp × 1.0)] / N
   const calculatePI = useCallback(() => {
-    const n = Number.parseFloat(totalN) || 0
-    const veryHigh = Number.parseFloat(fvh) || 0
-    const high = Number.parseFloat(fh) || 0
-    const normal = Number.parseFloat(fn) || 0
-    const low = Number.parseFloat(fl) || 0
-    const veryLow = Number.parseFloat(fvl) || 0
+    const attend = Number.parseFloat(fa) || 0
+    const consult = Number.parseFloat(fc) || 0
+    const workInvolve = Number.parseFloat(fi) || 0
+    const collaborate = Number.parseFloat(fcol) || 0
+    const empower = Number.parseFloat(femp) || 0
+    const n = calculateTotalN()
 
     if (n === 0) return null
 
-    const pi = (veryHigh * 1 + high * 0.8 + normal * 0.6 + low * 0.4 + veryLow * 0.2) / n
+    const pi = (attend * 0.2 + consult * 0.4 + workInvolve * 0.6 + collaborate * 0.8 + empower * 1.0) / n
     return pi.toFixed(4)
-  }, [totalN, fvh, fh, fn, fl, fvl])
+  }, [fa, fc, fi, fcol, femp, calculateTotalN])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, imageNum: 1 | 2) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, imageNum: 1 | 2 | 3 | 4) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB")
+        return
+      }
+
       const reader = new FileReader()
       reader.onloadend = () => {
         if (imageNum === 1) {
           setImage1(file)
           setImage1Preview(reader.result as string)
-        } else {
+        } else if (imageNum === 2) {
           setImage2(file)
           setImage2Preview(reader.result as string)
+        } else if (imageNum === 3) {
+          setImage3(file)
+          setImage3Preview(reader.result as string)
+        } else {
+          setImage4(file)
+          setImage4Preview(reader.result as string)
         }
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const removeImage = (imageNum: 1 | 2) => {
+  const removeImage = (imageNum: number) => {
     if (imageNum === 1) {
       setImage1(null)
       setImage1Preview(null)
-    } else {
+    } else if (imageNum === 2) {
       setImage2(null)
       setImage2Preview(null)
+    } else if (imageNum === 3) {
+      setImage3(null)
+      setImage3Preview(null)
+    } else {
+      setImage4(null)
+      setImage4Preview(null)
     }
   }
 
@@ -97,46 +134,43 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
     try {
       let image1Url = existingDetails?.image1_url || null
       let image2Url = existingDetails?.image2_url || null
+      let image3Url = existingDetails?.image3_url || null
+      let image4Url = existingDetails?.image4_url || null
 
-      // Upload images if new ones were selected
+      // Save images as base64 directly in database
       if (image1) {
-        const fileName = `${item.id}-1-${Date.now()}.${image1.name.split(".").pop()}`
-        const { error: uploadError } = await supabase.storage.from("participation-images").upload(fileName, image1)
-
-        if (uploadError) {
-          // If bucket doesn't exist, store as base64
-          image1Url = image1Preview
-        } else {
-          const { data: urlData } = supabase.storage.from("participation-images").getPublicUrl(fileName)
-          image1Url = urlData.publicUrl
-        }
+        image1Url = image1Preview // Already in base64 format
       }
 
       if (image2) {
-        const fileName = `${item.id}-2-${Date.now()}.${image2.name.split(".").pop()}`
-        const { error: uploadError } = await supabase.storage.from("participation-images").upload(fileName, image2)
+        image2Url = image2Preview // Already in base64 format
+      }
 
-        if (uploadError) {
-          image2Url = image2Preview
-        } else {
-          const { data: urlData } = supabase.storage.from("participation-images").getPublicUrl(fileName)
-          image2Url = urlData.publicUrl
-        }
+      if (image3) {
+        image3Url = image3Preview // Already in base64 format
+      }
+
+      if (image4) {
+        image4Url = image4Preview // Already in base64 format
       }
 
       const calculatedPi = calculatePI()
+      const totalN = calculateTotalN()
 
       const detailsData = {
         checklist_item_id: item.id,
         activity: activity || null,
         image1_url: image1Url,
         image2_url: image2Url,
-        total_participation_n: totalN ? Number.parseFloat(totalN) : null,
-        very_high_participation_fvh: fvh ? Number.parseFloat(fvh) : null,
-        high_participation_fh: fh ? Number.parseFloat(fh) : null,
-        normal_participation_fn: fn ? Number.parseFloat(fn) : null,
-        low_participation_fl: fl ? Number.parseFloat(fl) : null,
-        very_low_participation_fvl: fvl ? Number.parseFloat(fvl) : null,
+        image3_url: image3Url,
+        image4_url: image4Url,
+        total_participation_n: totalN || null,
+        // Database column mapping:
+        attend_fa: fa ? Number.parseFloat(fa) : null,              // fa = Attend
+        consult_fc: fc ? Number.parseFloat(fc) : null,             // fc = Consult
+        involve_fi: fi ? Number.parseFloat(fi) : null,             // fi = Work/Involve
+        collaborate_fcol: fcol ? Number.parseFloat(fcol) : null,   // fcol = Collaborate
+        empower_femp: femp ? Number.parseFloat(femp) : null,       // femp = Empower/Lead
         calculated_pi: calculatedPi ? Number.parseFloat(calculatedPi) : null,
         assumptions: assumptions || null,
         data_collected_by: collectedBy || null,
@@ -153,8 +187,10 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
 
         if (updateError) throw updateError
       } else {
-        // Insert new details
-        const { error: insertError } = await supabase.from("item_details").insert(detailsData)
+        // Insert new details using upsert to handle duplicates
+        const { error: insertError } = await supabase
+          .from("item_details")
+          .upsert(detailsData, { onConflict: "checklist_item_id" })
 
         if (insertError) throw insertError
       }
@@ -207,57 +243,100 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
             </div>
           )}
 
-          {/* Description based on category */}
-          <div className="bg-amber-50 p-4 rounded border border-amber-200">
-            <p className="text-sm text-amber-800">
-              {item.category?.name === "GOAL SETTING" &&
-                "Gather background, social and physical context, and stakeholders affected."}
-              {item.category?.name === "PROGRAMMING" &&
-                "Surveys, mapping, functional requirements, context restrictions."}
-              {item.category?.name === "CO-PRODUCTION" && "Document engagement activities and participant feedback."}
-              {item.category?.name === "IMPLEMENTATION" && "Track implementation progress and community involvement."}
-            </p>
-          </div>
-
           {/* Activity Description */}
           <div className="space-y-2">
-            <Label className="text-amber-900 font-semibold">Activity :</Label>
-            <div className="border border-amber-300 rounded-md p-3 bg-white min-h-[80px]">
+            <Label className="text-amber-900 font-semibold">Activity</Label>
+            <div className="border border-amber-300 rounded-md p-3 bg-white min-h-20">
               <p className="text-sm text-amber-900 whitespace-pre-wrap">{activity || "No activity description"}</p>
             </div>
           </div>
 
           {/* Images Display */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Image 1 */}
-            <div className="space-y-2">
-              <Label className="text-amber-900 font-semibold">Image 1</Label>
-              <div className="border border-amber-300 rounded-lg p-4 text-center min-h-[150px] flex items-center justify-center bg-white">
-                {image1Preview ? (
-                  <img
-                    src={image1Preview || "/placeholder.svg"}
-                    alt="Image 1"
-                    className="max-h-[120px] mx-auto object-contain"
-                  />
-                ) : (
-                  <span className="text-sm text-amber-600">No image uploaded</span>
-                )}
+          <div className="space-y-2">
+            <Label className="text-amber-900 font-semibold text-base">Images</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Image 1 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 1</div>
+                <div className="border-2 border-amber-300 rounded-lg p-3 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  {image1Preview ? (
+                    <div className="aspect-square w-full flex items-center justify-center overflow-hidden rounded">
+                      <img
+                        src={image1Preview || "/placeholder.svg"}
+                        alt="Image 1"
+                        className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => window.open(image1Preview, '_blank')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full flex items-center justify-center bg-amber-50 rounded">
+                      <span className="text-sm text-amber-600">No image</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Image 2 */}
-            <div className="space-y-2">
-              <Label className="text-amber-900 font-semibold">Image 2</Label>
-              <div className="border border-amber-300 rounded-lg p-4 text-center min-h-[150px] flex items-center justify-center bg-white">
-                {image2Preview ? (
-                  <img
-                    src={image2Preview || "/placeholder.svg"}
-                    alt="Image 2"
-                    className="max-h-[120px] mx-auto object-contain"
-                  />
-                ) : (
-                  <span className="text-sm text-amber-600">No image uploaded</span>
-                )}
+              {/* Image 2 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 2</div>
+                <div className="border-2 border-amber-300 rounded-lg p-3 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  {image2Preview ? (
+                    <div className="aspect-square w-full flex items-center justify-center overflow-hidden rounded">
+                      <img
+                        src={image2Preview || "/placeholder.svg"}
+                        alt="Image 2"
+                        className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => window.open(image2Preview, '_blank')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full flex items-center justify-center bg-amber-50 rounded">
+                      <span className="text-sm text-amber-600">No image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Image 3 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 3</div>
+                <div className="border-2 border-amber-300 rounded-lg p-3 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  {image3Preview ? (
+                    <div className="aspect-square w-full flex items-center justify-center overflow-hidden rounded">
+                      <img
+                        src={image3Preview || "/placeholder.svg"}
+                        alt="Image 3"
+                        className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => window.open(image3Preview, '_blank')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full flex items-center justify-center bg-amber-50 rounded">
+                      <span className="text-sm text-amber-600">No image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Image 4 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 4</div>
+                <div className="border-2 border-amber-300 rounded-lg p-3 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  {image4Preview ? (
+                    <div className="aspect-square w-full flex items-center justify-center overflow-hidden rounded">
+                      <img
+                        src={image4Preview || "/placeholder.svg"}
+                        alt="Image 4"
+                        className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => window.open(image4Preview, '_blank')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full flex items-center justify-center bg-amber-50 rounded">
+                      <span className="text-sm text-amber-600">No image</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -269,45 +348,52 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
               <table className="w-full border-collapse border border-amber-300">
                 <thead>
                   <tr className="bg-amber-100">
-                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Level</th>
-                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Value</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Activity</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Description</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">No. of participates</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Total participation(N)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Attend(f<sub>a</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Attending meetings or events without active contribution</td>
                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{totalN || "-"}</div>
+                      <div className="px-2 py-1 text-sm text-amber-900">{fa || "-"}</div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Very high participation(fvh)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Consult(f<sub>c</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Providing opinions, feedback, or suggestions</td>
                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{fvh || "-"}</div>
+                      <div className="px-2 py-1 text-sm text-amber-900">{fc || "-"}</div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">High participation(fh)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Work/Involve(f<sub>i</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Participating in project activities or tasks</td>
                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{fh || "-"}</div>
+                      <div className="px-2 py-1 text-sm text-amber-900">{fi || "-"}</div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Normal participation (fn)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Collaborate(f<sub>col</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Working jointly with project leaders or committees in decision-making</td>
                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{fn || "-"}</div>
+                      <div className="px-2 py-1 text-sm text-amber-900">{fcol || "-"}</div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Low participation(fl)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Empower/Lead(f<sub>emp</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Taking leadership roles and making decisions independently</td>
                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{fl || "-"}</div>
+                      <div className="px-2 py-1 text-sm text-amber-900">{femp || "-"}</div>
                     </td>
                   </tr>
-                  <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Very low participation(fvl)</td>
-                    <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                      <div className="px-2 py-1 text-sm text-amber-900">{fvl || "-"}</div>
+                  <tr className="bg-amber-50">
+                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total number of respondents (N)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total Participants</td>
+                    <td className="border border-amber-300 px-3 py-2 bg-amber-100">
+                      <div className="px-2 py-1 text-sm text-amber-900 font-semibold">{calculateTotalN() || "-"}</div>
                     </td>
                   </tr>
                 </tbody>
@@ -318,16 +404,17 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
           {/* Formula and PI Display */}
           <div className="bg-amber-100 p-4 rounded border border-amber-300">
             <p className="text-sm font-mono text-amber-900 mb-2">
-              PI = [ (fvh x 1) + (fh x 0.8) + (fn x 0.6) + (fl x 0.4) + (fvl x 0.2) ] / N
+              PI = [ (f<sub>a</sub> × 0.2) + (f<sub>c</sub> × 0.4) + (f<sub>i</sub> × 0.6) + (f<sub>col</sub> × 0.8) + (f<sub>emp</sub> × 1.0) ] / N
             </p>
             <p className="text-lg font-bold text-amber-900">PI = {pi || "....................."}</p>
+            <p className="text-lg font-bold text-amber-900 mt-2">PI% = {pi ? (Number.parseFloat(pi) * 100).toFixed(2) + "%" : "....................."}</p>
           </div>
 
-          {/* Assumptions */}
+          {/* Notes */}
           <div className="space-y-2">
-            <Label className="text-amber-900 font-semibold">Assumptions :</Label>
+            <Label className="text-amber-900 font-semibold">Notes :</Label>
             <div className="border border-amber-300 rounded-md p-3 bg-white min-h-[60px]">
-              <p className="text-sm text-amber-900 whitespace-pre-wrap">{assumptions || "No assumptions provided"}</p>
+              <p className="text-sm text-amber-900 whitespace-pre-wrap">{assumptions || "No notes provided"}</p>
             </div>
           </div>
 
@@ -382,18 +469,6 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
             </div>
           )}
 
-          {/* Description based on category */}
-          <div className="bg-amber-50 p-4 rounded border border-amber-200">
-            <p className="text-sm text-amber-800">
-              {item.category?.name === "GOAL SETTING" &&
-                "Gather background, social and physical context, and stakeholders affected."}
-              {item.category?.name === "PROGRAMMING" &&
-                "Surveys, mapping, functional requirements, context restrictions."}
-              {item.category?.name === "CO-PRODUCTION" && "Document engagement activities and participant feedback."}
-              {item.category?.name === "IMPLEMENTATION" && "Track implementation progress and community involvement."}
-            </p>
-          </div>
-
           {/* Activity Description */}
           <div className="space-y-2">
             <Label htmlFor="activity" className="text-amber-900 font-semibold">
@@ -410,62 +485,127 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
           </div>
 
           {/* Image Upload Section */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Image 1 */}
-            <div className="space-y-2">
-              <Label className="text-amber-900 font-semibold">Image 1</Label>
-              <div className="border-2 border-dashed border-amber-300 rounded-lg p-4 text-center min-h-[150px] flex items-center justify-center relative">
-                {image1Preview ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={image1Preview || "/placeholder.svg"}
-                      alt="Image 1"
-                      className="max-h-[120px] mx-auto object-contain"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(1)}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="cursor-pointer flex flex-col items-center">
-                    <Upload className="w-8 h-8 text-amber-400" />
-                    <span className="text-sm text-amber-600 mt-2">Click to upload</span>
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 1)} className="hidden" />
-                  </label>
-                )}
+          <div className="space-y-2">
+            <Label className="text-amber-900 font-semibold text-base">Images</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Image 1 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 1</div>
+                <div className="border-2 border-dashed border-amber-400 rounded-lg bg-amber-50/50 hover:bg-amber-50 hover:border-amber-500 transition-all">
+                  {image1Preview ? (
+                    <div className="relative aspect-square p-2">
+                      <img
+                        src={image1Preview || "/placeholder.svg"}
+                        alt="Image 1"
+                        className="w-full h-full object-contain rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(1)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center aspect-square p-4">
+                      <Upload className="w-10 h-10 text-amber-500 mb-2" />
+                      <span className="text-sm text-amber-700 font-medium">Click to upload</span>
+                      <span className="text-xs text-amber-600 mt-1">Max 5MB</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 1)} className="hidden" />
+                    </label>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Image 2 */}
-            <div className="space-y-2">
-              <Label className="text-amber-900 font-semibold">Image 2</Label>
-              <div className="border-2 border-dashed border-amber-300 rounded-lg p-4 text-center min-h-[150px] flex items-center justify-center relative">
-                {image2Preview ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={image2Preview || "/placeholder.svg"}
-                      alt="Image 2"
-                      className="max-h-[120px] mx-auto object-contain"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(2)}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="cursor-pointer flex flex-col items-center">
-                    <Upload className="w-8 h-8 text-amber-400" />
-                    <span className="text-sm text-amber-600 mt-2">Click to upload</span>
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 2)} className="hidden" />
-                  </label>
-                )}
+              {/* Image 2 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 2</div>
+                <div className="border-2 border-dashed border-amber-400 rounded-lg bg-amber-50/50 hover:bg-amber-50 hover:border-amber-500 transition-all">
+                  {image2Preview ? (
+                    <div className="relative aspect-square p-2">
+                      <img
+                        src={image2Preview || "/placeholder.svg"}
+                        alt="Image 2"
+                        className="w-full h-full object-contain rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(2)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center aspect-square p-4">
+                      <Upload className="w-10 h-10 text-amber-500 mb-2" />
+                      <span className="text-sm text-amber-700 font-medium">Click to upload</span>
+                      <span className="text-xs text-amber-600 mt-1">Max 5MB</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 2)} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Image 3 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 3</div>
+                <div className="border-2 border-dashed border-amber-400 rounded-lg bg-amber-50/50 hover:bg-amber-50 hover:border-amber-500 transition-all">
+                  {image3Preview ? (
+                    <div className="relative aspect-square p-2">
+                      <img
+                        src={image3Preview || "/placeholder.svg"}
+                        alt="Image 3"
+                        className="w-full h-full object-contain rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(3)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center aspect-square p-4">
+                      <Upload className="w-10 h-10 text-amber-500 mb-2" />
+                      <span className="text-sm text-amber-700 font-medium">Click to upload</span>
+                      <span className="text-xs text-amber-600 mt-1">Max 5MB</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 3)} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Image 4 */}
+              <div className="space-y-2">
+                <div className="text-sm text-amber-700 font-medium">Image 4</div>
+                <div className="border-2 border-dashed border-amber-400 rounded-lg bg-amber-50/50 hover:bg-amber-50 hover:border-amber-500 transition-all">
+                  {image4Preview ? (
+                    <div className="relative aspect-square p-2">
+                      <img
+                        src={image4Preview || "/placeholder.svg"}
+                        alt="Image 4"
+                        className="w-full h-full object-contain rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(4)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center aspect-square p-4">
+                      <Upload className="w-10 h-10 text-amber-500 mb-2" />
+                      <span className="text-sm text-amber-700 font-medium">Click to upload</span>
+                      <span className="text-xs text-amber-600 mt-1">Max 5MB</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 4)} className="hidden" />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -477,81 +617,82 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
               <table className="w-full border-collapse border border-amber-300">
                 <thead>
                   <tr className="bg-amber-100">
-                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Level</th>
-                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Value</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Activity</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Description</th>
+                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">No. of participates</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Total participation(N)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Attend(f<sub>a</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Attending meetings or events without active contribution</td>
                     <td className="border border-amber-300 px-3 py-2">
                       <Input
                         type="number"
-                        value={totalN}
-                        onChange={(e) => setTotalN(e.target.value)}
+                        value={fa}
+                        onChange={(e) => setFa(e.target.value)}
                         className="h-8 border-amber-300"
                         min="0"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Very high participation(fvh)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Consult(f<sub>c</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Providing opinions, feedback, or suggestions</td>
                     <td className="border border-amber-300 px-3 py-2">
                       <Input
                         type="number"
-                        value={fvh}
-                        onChange={(e) => setFvh(e.target.value)}
+                        value={fc}
+                        onChange={(e) => setFc(e.target.value)}
                         className="h-8 border-amber-300"
                         min="0"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">High participation(fh)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Work/Involve(f<sub>i</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Participating in project activities or tasks</td>
                     <td className="border border-amber-300 px-3 py-2">
                       <Input
                         type="number"
-                        value={fh}
-                        onChange={(e) => setFh(e.target.value)}
+                        value={fi}
+                        onChange={(e) => setFi(e.target.value)}
                         className="h-8 border-amber-300"
                         min="0"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Normal participation (fn)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Collaborate(f<sub>col</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Working jointly with project leaders or committees in decision-making</td>
                     <td className="border border-amber-300 px-3 py-2">
                       <Input
                         type="number"
-                        value={fn}
-                        onChange={(e) => setFn(e.target.value)}
+                        value={fcol}
+                        onChange={(e) => setFcol(e.target.value)}
                         className="h-8 border-amber-300"
                         min="0"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Low participation(fl)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Empower/Lead(f<sub>emp</sub>)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm">Taking leadership roles and making decisions independently</td>
                     <td className="border border-amber-300 px-3 py-2">
                       <Input
                         type="number"
-                        value={fl}
-                        onChange={(e) => setFl(e.target.value)}
+                        value={femp}
+                        onChange={(e) => setFemp(e.target.value)}
                         className="h-8 border-amber-300"
                         min="0"
                       />
                     </td>
                   </tr>
-                  <tr>
-                    <td className="border border-amber-300 px-3 py-2 text-sm">Very low participation(fvl)</td>
-                    <td className="border border-amber-300 px-3 py-2">
-                      <Input
-                        type="number"
-                        value={fvl}
-                        onChange={(e) => setFvl(e.target.value)}
-                        className="h-8 border-amber-300"
-                        min="0"
-                      />
+                  <tr className="bg-amber-50">
+                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total number of respondents (N)</td>
+                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total Participants</td>
+                    <td className="border border-amber-300 px-3 py-2 bg-amber-100">
+                      <div className="px-2 py-1 text-sm text-amber-900 font-semibold h-8 flex items-center">{calculateTotalN() || "0"}</div>
                     </td>
                   </tr>
                 </tbody>
@@ -562,21 +703,22 @@ export function ItemDetailForm({ item, projectId, existingDetails }: ItemDetailF
           {/* Formula and PI Display */}
           <div className="bg-amber-100 p-4 rounded border border-amber-300">
             <p className="text-sm font-mono text-amber-900 mb-2">
-              PI = [ (fvh x 1) + (fh x 0.8) + (fn x 0.6) + (fl x 0.4) + (fvl x 0.2) ] / N
+              PI = [ (f<sub>a</sub> × 0.2) + (f<sub>c</sub> × 0.4) + (f<sub>i</sub> × 0.6) + (f<sub>col</sub> × 0.8) + (f<sub>emp</sub> × 1.0) ] / N
             </p>
             <p className="text-lg font-bold text-amber-900">PI = {pi || "....................."}</p>
+            <p className="text-lg font-bold text-amber-900 mt-2">PI% = {pi ? (Number.parseFloat(pi) * 100).toFixed(2) + "%" : "....................."}</p>
           </div>
 
-          {/* Assumptions */}
+          {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="assumptions" className="text-amber-900 font-semibold">
-              Assumptions :
+              Notes :
             </Label>
             <Textarea
               id="assumptions"
               value={assumptions}
               onChange={(e) => setAssumptions(e.target.value)}
-              placeholder="Enter assumptions..."
+              placeholder="Enter notes..."
               rows={2}
               className="border-amber-300"
             />

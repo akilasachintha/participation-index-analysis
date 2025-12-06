@@ -43,21 +43,23 @@ export default async function ProjectsPage() {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects?.map((project) => (
-            <Link key={project.id} href={`/project/${project.id}`}>
-              <Card className="border-amber-200 hover:border-amber-400 transition-colors cursor-pointer h-full">
-                <CardHeader className="bg-amber-100 border-b border-amber-200">
-                  <CardTitle className="text-amber-900 text-lg">{project.name}</CardTitle>
-                  <CardDescription className="text-amber-600">
-                    Created {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <p className="text-amber-700 text-sm line-clamp-2">
-                    {project.description || "No description provided"}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
+            <div key={project.id} className="h-full">
+              <Link href={`/project/${project.id}`} className="block h-full">
+                <Card className="border-amber-200 hover:border-amber-400 hover:shadow-md transition-all h-full">
+                  <CardHeader className="bg-amber-100 border-b border-amber-200">
+                    <CardTitle className="text-amber-900 text-lg">{project.name}</CardTitle>
+                    <CardDescription className="text-amber-600">
+                      Created {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <p className="text-amber-700 text-sm line-clamp-2">
+                      {project.description || "No description provided"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
           ))}
         </div>
       </main>

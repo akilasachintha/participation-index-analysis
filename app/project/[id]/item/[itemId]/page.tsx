@@ -59,9 +59,12 @@ export default async function ItemDetailPage({ params }: PageProps) {
 
       {/* Category Header */}
       <div className="container mx-auto px-4 py-4">
-        <div className="bg-amber-200 text-amber-900 px-4 py-2 rounded-t">
-          <h2 className="font-bold">{item.category?.name}:</h2>
-          <p className="font-semibold">{item.title}</p>
+        <div className="bg-amber-200 text-amber-900 px-4 py-3 rounded-t">
+          <h2 className="font-bold text-lg">{item.category?.name}:</h2>
+          <p className="font-semibold text-base mt-1">{item.title}</p>
+          {item.description && (
+            <p className="text-sm mt-2 text-amber-800 whitespace-pre-wrap">{item.description}</p>
+          )}
         </div>
       </div>
 

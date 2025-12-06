@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ChecklistTable } from "@/components/checklist-table"
-import { ExportPdfButton } from "@/components/export-pdf-button"
+import { DeleteProjectButton } from "@/components/delete-project-button"
+import { EditProjectButton } from "@/components/edit-project-button"
+import { BarChart3 } from "lucide-react"
 import type { Category, ChecklistItem, CategoryWithItems } from "@/lib/types"
 
 interface PageProps {
@@ -46,15 +48,34 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-amber-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-amber-600 to-amber-700 border-b border-amber-700 py-4 shadow-md">
+      <header className="bg-linear-to-r from-amber-600 to-amber-700 border-b border-amber-700 py-4 shadow-md">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div>
             <Link href="/" className="text-amber-100 hover:text-white text-sm transition-colors">
               ← Back to Projects
             </Link>
             <h1 className="text-2xl font-bold text-white mt-1">Participation Index Analysis</h1>
+            <p className="text-amber-100 text-sm mt-1 max-w-2xl">
+              Calculated based on the frequency and intensity of participation activities, weighted according to their
+              significance
+            </p>
           </div>
-          <ExportPdfButton projectId={id} projectName={project.name} />
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/project/${id}/analytics`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors shadow-md"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </Link>
+            <EditProjectButton
+              projectId={id}
+              projectName={project.name}
+              projectDescription={project.description}
+              projectImage={project.image_url}
+            />
+            <DeleteProjectButton projectId={id} projectName={project.name} />
+          </div>
         </div>
       </header>
 

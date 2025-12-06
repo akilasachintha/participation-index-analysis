@@ -245,34 +245,38 @@ export default async function ExportPage({ params }: PageProps) {
           
           .images-grid { 
             display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 12px; 
-            margin-top: 16px; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px; 
+            margin-top: 20px;
+            margin-bottom: 20px;
           }
           
-          @media (min-width: 640px) {
-            .images-grid { grid-template-columns: 1fr 1fr; }
+          @media (min-width: 768px) {
+            .images-grid { 
+              grid-template-columns: 1fr 1fr 1fr 1fr;
+              gap: 20px;
+            }
           }
           
           .image-box { 
-            border: 1px solid #fbbf24; 
+            border: 2px solid #fbbf24; 
             border-radius: 8px; 
             overflow: hidden; 
-            height: 150px; 
-            background: #fef3c7; 
+            aspect-ratio: 1; 
+            background: white; 
             display: flex; 
             align-items: center; 
-            justify-content: center; 
-          }
-          
-          @media (max-width: 639px) {
-            .image-box { height: 200px; }
+            justify-content: center;
+            padding: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           }
           
           .image-box img { 
             max-width: 100%; 
             max-height: 100%; 
             object-fit: contain; 
+            width: 100%;
+            height: 100%;
           }
           
           .participation-table { 
@@ -404,6 +408,13 @@ export default async function ExportPage({ params }: PageProps) {
                       </div>
                     </div>
 
+                    {item.description && (
+                      <div style={{ marginBottom: "16px" }}>
+                        <div className="detail-label">Description</div>
+                        <div className="detail-value" style={{ whiteSpace: "pre-wrap" }}>{item.description}</div>
+                      </div>
+                    )}
+
                     {detail.activity && (
                       <div style={{ marginBottom: "16px" }}>
                         <div className="detail-label">Activity</div>
@@ -412,23 +423,40 @@ export default async function ExportPage({ params }: PageProps) {
                     )}
 
                     {/* Images */}
-                    {(detail.image1_url || detail.image2_url) && (
-                      <div className="images-grid">
-                        <div className="image-box">
-                          {detail.image1_url ? (
-                            <img src={detail.image1_url || "/placeholder.svg"} alt="Image 1" />
-                          ) : (
-                            <span style={{ color: "#92400e", fontSize: "12px" }}>No image</span>
-                          )}
+                    {(detail.image1_url || detail.image2_url || detail.image3_url || detail.image4_url) && (
+                      <>
+                        <div className="detail-label" style={{ marginTop: "20px", fontSize: "14px" }}>Images</div>
+                        <div className="images-grid">
+                          <div className="image-box">
+                            {detail.image1_url ? (
+                              <img src={detail.image1_url || "/placeholder.svg"} alt="Image 1" />
+                            ) : (
+                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
+                            )}
+                          </div>
+                          <div className="image-box">
+                            {detail.image2_url ? (
+                              <img src={detail.image2_url || "/placeholder.svg"} alt="Image 2" />
+                            ) : (
+                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
+                            )}
+                          </div>
+                          <div className="image-box">
+                            {detail.image3_url ? (
+                              <img src={detail.image3_url || "/placeholder.svg"} alt="Image 3" />
+                            ) : (
+                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
+                            )}
+                          </div>
+                          <div className="image-box">
+                            {detail.image4_url ? (
+                              <img src={detail.image4_url || "/placeholder.svg"} alt="Image 4" />
+                            ) : (
+                              <div style={{ color: "#92400e", fontSize: "12px", textAlign: "center" }}>No image</div>
+                            )}
+                          </div>
                         </div>
-                        <div className="image-box">
-                          {detail.image2_url ? (
-                            <img src={detail.image2_url || "/placeholder.svg"} alt="Image 2" />
-                          ) : (
-                            <span style={{ color: "#92400e", fontSize: "12px" }}>No image</span>
-                          )}
-                        </div>
-                      </div>
+                      </>
                     )}
 
                     {/* Participation Table */}
@@ -436,21 +464,21 @@ export default async function ExportPage({ params }: PageProps) {
                       <thead>
                         <tr>
                           <th>Total (N)</th>
-                          <th>Very High (fvh)</th>
-                          <th>High (fh)</th>
-                          <th>Normal (fn)</th>
-                          <th>Low (fl)</th>
-                          <th>Very Low (fvl)</th>
+                          <th>Attend (fa)</th>
+                          <th>Consult (fc)</th>
+                          <th>Involve (fi)</th>
+                          <th>Collaborate (fcol)</th>
+                          <th>Empower (femp)</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td>{detail.total_participation_n ?? "-"}</td>
-                          <td>{detail.very_high_participation_fvh ?? "-"}</td>
-                          <td>{detail.high_participation_fh ?? "-"}</td>
-                          <td>{detail.normal_participation_fn ?? "-"}</td>
-                          <td>{detail.low_participation_fl ?? "-"}</td>
-                          <td>{detail.very_low_participation_fvl ?? "-"}</td>
+                          <td>{detail.attend_fa ?? "-"}</td>
+                          <td>{detail.consult_fc ?? "-"}</td>
+                          <td>{detail.involve_fi ?? "-"}</td>
+                          <td>{detail.collaborate_fcol ?? "-"}</td>
+                          <td>{detail.empower_femp ?? "-"}</td>
                         </tr>
                       </tbody>
                     </table>
