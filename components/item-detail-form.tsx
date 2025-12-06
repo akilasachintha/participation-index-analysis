@@ -10,6 +10,7 @@ import {Label} from "@/components/ui/label"
 import {Card, CardContent} from "@/components/ui/card"
 import {CheckCircle, Edit, Upload, X} from "lucide-react"
 import type {ChecklistItem, ItemDetail} from "@/lib/types"
+import {ImageViewerDialog} from "@/components/image-viewer-dialog"
 
 interface ItemDetailFormProps {
     item: ChecklistItem
@@ -23,6 +24,10 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
     const [isCompleted, setIsCompleted] = useState(item.is_completed || false)
+    
+    // Image viewer state
+    const [viewerOpen, setViewerOpen] = useState(false)
+    const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null)
 
     // Form state - initialized from existingDetails
     const [activity, setActivity] = useState(existingDetails?.activity || "")
@@ -76,6 +81,11 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
         const pi = (attend * 0.2 + consult * 0.4 + workInvolve * 0.6 + collaborate * 0.8 + empower * 1.0) / n
         return pi.toFixed(4)
     }, [fa, fc, fi, fcol, femp, calculateTotalN])
+
+    const openImageViewer = (src: string, alt: string) => {
+        setViewerImage({ src, alt })
+        setViewerOpen(true)
+    }
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, imageNum: 1 | 2 | 3 | 4) => {
         const file = e.target.files?.[0]
@@ -222,6 +232,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
     // Read-only view when not editing and has existing details
     if (!isEditing && existingDetails) {
         return (
+            <>
             <Card className="border-amber-300">
                 <CardContent className="p-6 space-y-6">
                     {/* Edit Button */}
@@ -267,7 +278,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                                 src={image1Preview || "/placeholder.svg"}
                                                 alt="Image 1"
                                                 className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                                onClick={() => window.open(image1Preview, '_blank')}
+                                                onClick={() => openImageViewer(image1Preview, 'Image 1')}
                                             />
                                         </div>
                                     ) : (
@@ -291,7 +302,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                                 src={image2Preview || "/placeholder.svg"}
                                                 alt="Image 2"
                                                 className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                                onClick={() => window.open(image2Preview, '_blank')}
+                                                onClick={() => openImageViewer(image2Preview, 'Image 2')}
                                             />
                                         </div>
                                     ) : (
@@ -315,7 +326,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                                 src={image3Preview || "/placeholder.svg"}
                                                 alt="Image 3"
                                                 className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                                onClick={() => window.open(image3Preview, '_blank')}
+                                                onClick={() => openImageViewer(image3Preview, 'Image 3')}
                                             />
                                         </div>
                                     ) : (
@@ -339,7 +350,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                                 src={image4Preview || "/placeholder.svg"}
                                                 alt="Image 4"
                                                 className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                                onClick={() => window.open(image4Preview, '_blank')}
+                                                onClick={() => openImageViewer(image4Preview, 'Image 4')}
                                             />
                                         </div>
                                     ) : (
@@ -482,11 +493,23 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                     </div>
                 </CardContent>
             </Card>
+            
+            {/* Image Viewer Dialog */}
+            {viewerImage && (
+                <ImageViewerDialog
+                    imageSrc={viewerImage.src}
+                    imageAlt={viewerImage.alt}
+                    open={viewerOpen}
+                    onOpenChange={setViewerOpen}
+                />
+            )}
+            </>
         )
     }
 
     // Edit form view
     return (
+        <>
         <form onSubmit={handleSubmit}>
             <Card className="border-amber-300">
                 <CardContent className="p-6 space-y-6">
@@ -858,5 +881,16 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                 </CardContent>
             </Card>
         </form>
+        
+        {/* Image Viewer Dialog */}
+        {viewerImage && (
+            <ImageViewerDialog
+                imageSrc={viewerImage.src}
+                imageAlt={viewerImage.alt}
+                open={viewerOpen}
+                onOpenChange={setViewerOpen}
+            />
+        )}
+    </>
     )
 }
