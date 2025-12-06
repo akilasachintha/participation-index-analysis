@@ -18,7 +18,8 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {DEFAULT_CHECKLIST_ITEMS} from "@/lib/types"
-import {ArrowRight, BarChart3, Calendar, CheckCircle2, Circle, FolderOpen, Plus, Upload, X} from "lucide-react"
+import {ArrowRight, BarChart3, Calendar, CheckCircle2, Circle, FolderOpen, Plus, Upload, X, User} from "lucide-react"
+import {LogoutButton} from "@/components/logout-button"
 
 interface Project {
     id: string
@@ -40,18 +41,36 @@ export default function HomePage() {
     const [projects, setProjects] = useState<Project[]>([])
     const [isLoadingProjects, setIsLoadingProjects] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
+    const [userName, setUserName] = useState<string | null>(null)
     const router = useRouter()
 
     useEffect(() => {
+        fetchUser()
         fetchProjects()
     }, [])
+
+    const fetchUser = async () => {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            setUserName(user.user_metadata?.full_name || user.email)
+        }
+    }
 
     const fetchProjects = async () => {
         const supabase = createClient()
 
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            setIsLoadingProjects(false)
+            return
+        }
+
         const {data: projectsData, error: projectsError} = await supabase
             .from("projects")
             .select("*")
+            .eq("user_id", user.id)
             .order("created_at", {ascending: false})
 
         if (projectsError) {
@@ -114,6 +133,12 @@ export default function HomePage() {
         const supabase = createClient()
 
         try {
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                throw new Error("You must be logged in to create a project")
+            }
+
             let imageUrl: string | null = null
 
             // Save image as base64 directly in database
@@ -126,7 +151,8 @@ export default function HomePage() {
                 .insert({
                     name: name.trim(),
                     description: description.trim() || null,
-                    image_url: imageUrl
+                    image_url: imageUrl,
+                    user_id: user.id
                 })
                 .select()
                 .single()
@@ -214,21 +240,29 @@ export default function HomePage() {
                             <p className="text-sm text-muted-foreground">Analysis Dashboard</p>
                         </div>
                     </div>
-                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-                                <Plus className="h-4 w-4"/>
-                                New Project
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md bg-card">
-                            <DialogHeader>
-                                <DialogTitle className="text-foreground">Create New Project</DialogTitle>
-                                <DialogDescription className="text-muted-foreground">
-                                    Start a new Participation Index Analysis project
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleCreateProject} className="space-y-4 mt-4">
+                    <div className="flex items-center gap-3">
+                        {userName && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-md border border-amber-200">
+                                <User className="h-4 w-4 text-amber-700" />
+                                <span className="text-sm text-amber-900">{userName}</span>
+                            </div>
+                        )}
+                        <LogoutButton />
+                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+                                    <Plus className="h-4 w-4"/>
+                                    New Project
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md bg-card">
+                                <DialogHeader>
+                                    <DialogTitle className="text-foreground">Create New Project</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground">
+                                        Start a new Participation Index Analysis project
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleCreateProject} className="space-y-4 mt-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="project-name" className="text-foreground font-medium">
                                         Project Name
@@ -312,6 +346,7 @@ export default function HomePage() {
                             </form>
                         </DialogContent>
                     </Dialog>
+                </div>
                 </div>
             </header>
 
