@@ -51,7 +51,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-2 border-amber-200">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-amber-900">Welcome Back</CardTitle>
@@ -63,7 +63,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
                 <span className="text-sm">{error}</span>
               </div>
             )}

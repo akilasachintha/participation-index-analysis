@@ -38,7 +38,7 @@ export function ImageViewerDialog({ imageSrc, imageAlt, open, onOpenChange }: Im
           >
             <ZoomOut className="w-4 h-4" />
           </Button>
-          <span className="text-sm text-amber-900 font-medium min-w-[3rem] text-center">{zoom}%</span>
+          <span className="text-sm text-amber-900 font-medium min-w-12 text-center">{zoom}%</span>
           <Button
             variant="ghost"
             size="sm"
