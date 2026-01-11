@@ -116,7 +116,7 @@ export async function CircularProcessFlow({projectId}: CircularProcessFlowProps)
         <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-amber-900 mb-2">INTEGRATED BUILDING PROCESS</h2>
-                <p className="text-amber-700 italic">(Utility-Latest)</p>
+                <p className="text-amber-700 italic">(Turin, Latour)</p>
             </div>
 
             {/* Process Stages List */}
