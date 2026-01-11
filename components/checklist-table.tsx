@@ -50,6 +50,37 @@ export function ChecklistTable({categorizedItems, projectId}: ChecklistTableProp
         !predefinedCategoryNames.includes(item.category.name)
     )
 
+    // Get category descriptions
+    const getCategoryDescription = (categoryName: string) => {
+        const descriptions = {
+            'GOAL SETTING': 'Emphasizes early and continuous engagement with actors to inform spatial decision-making',
+            'PROGRAMMING': 'Redistribute power within the design process by creating conditions for meaningful collaboration',
+            'CO-PRODUCTION': 'Recording community inputs, design decisions, and subsequent revisions, and clearly communicating how participant contributions influence the evolving project',
+            'IMPLEMENTATION': 'Creates continuous and flexible engagement across time and space'
+        }
+        return descriptions[categoryName as keyof typeof descriptions] || ''
+    }
+
+    // Toggle completion status
+    const handleToggleCompletion = async (itemId: string, currentStatus: boolean) => {
+        try {
+            const {error} = await supabase
+                .from("checklist_items")
+                .update({
+                    is_completed: !currentStatus,
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", itemId)
+
+            if (error) throw error
+
+            router.refresh()
+        } catch (error) {
+            console.error("Error toggling completion:", error)
+            alert("Failed to update item status")
+        }
+    }
+
     // State for adding new category
     const [newCategoryName, setNewCategoryName] = useState("")
     const [isAddingCategory, setIsAddingCategory] = useState(false)
@@ -57,7 +88,7 @@ export function ChecklistTable({categorizedItems, projectId}: ChecklistTableProp
     // State for adding new items
     const [newItemTitle, setNewItemTitle] = useState("")
     const [newItemDescription, setNewItemDescription] = useState("")
-    const [addingItemTo, setAddingItemTo] = useState<{ categoryId: string; type: "analog" | "digital" } | null>(null)
+    const [addingItemTo, setAddingItemTo] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     // State for editing items
@@ -153,8 +184,8 @@ export function ChecklistTable({categorizedItems, projectId}: ChecklistTableProp
         try {
             const {error} = await supabase.from("checklist_items").insert({
                 project_id: projectId,
-                category_id: addingItemTo.categoryId,
-                item_type: addingItemTo.type,
+                category_id: addingItemTo,
+                item_type: "analog", // default to analog for backward compatibility
                 title: newItemTitle.trim(),
                 description: newItemDescription.trim() || null,
                 is_completed: false,
@@ -224,528 +255,285 @@ export function ChecklistTable({categorizedItems, projectId}: ChecklistTableProp
         }
     }
 
-    const renderCategoryRow = (categoryData: CategoryWithItems, showDeleteButton: boolean = false) => (
-        <tr key={categoryData.category.id}>
-            {/* Category Label - Vertical */}
-            <td className="border border-amber-300 bg-amber-200 p-2 align-top relative group">
-                <div
-                    className="writing-mode-vertical text-amber-900 font-bold text-sm"
-                    style={{
-                        writingMode: "vertical-rl",
-                        textOrientation: "mixed",
-                        transform: "rotate(180deg)",
-                        minHeight: "120px",
-                    }}
-                >
-                    {categoryData.category.name}
-                </div>
-                {/* Delete category button - only for custom categories */}
-                {showDeleteButton && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <button
-                                className="absolute top-1 right-1 p-1 bg-red-100 hover:bg-red-200 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                disabled={isSubmitting}
-                            >
-                                <Trash2 className="w-3 h-3 text-red-600"/>
-                            </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete "{categoryData.category.name}"? This will remove all
-                                    items in
-                                    this category for this project.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        handleDeleteCategory(categoryData.category.id)
-                                    }}
-                                    disabled={isSubmitting}
-                                    className="bg-red-600 hover:bg-red-700"
-                                >
-                                    {isSubmitting ? "Deleting..." : "Delete"}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
-            </td>
 
-            {/* Analog Items */}
-            <td className="border border-amber-300 p-4 align-top">
-                <ul className="space-y-2">
-                    {categoryData.analogItems.map((item) => (
-                        <li key={item.id} className="flex items-start gap-2 group/item">
-                            <Link
-                                href={`/project/${projectId}/item/${item.id}`}
-                                className="flex items-start gap-2 hover:bg-amber-50 p-1 rounded flex-1"
-                            >
-                                <div
-                                    className={`w-5 h-5 border-2 shrink-0 flex items-center justify-center mt-0.5 ${
-                                        item.is_completed ? "bg-green-500 border-green-500" : "border-amber-400"
-                                    }`}
-                                >
-                                    {item.is_completed && <Check className="w-3 h-3 text-white"/>}
-                                </div>
-                                <span
-                                    className={`text-sm hover:text-amber-700 ${
-                                        item.is_completed ? "text-green-700" : "text-amber-800"
-                                    }`}
-                                >
-                          {item.title}
-                        </span>
-                            </Link>
-                            <div
-                                className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
-                                {/* Edit item button */}
-                                <Dialog
-                                    open={editingItem?.id === item.id}
-                                    onOpenChange={(open) => {
-                                        if (open) {
-                                            setEditingItem({
-                                                id: item.id,
-                                                title: item.title,
-                                                description: item.description
-                                            })
-                                            setEditItemTitle(item.title)
-                                            setEditItemDescription(item.description || "")
-                                        } else {
-                                            setEditingItem(null)
-                                            setEditItemTitle("")
-                                            setEditItemDescription("")
-                                        }
-                                    }}
-                                >
-                                    <DialogTrigger asChild>
-                                        <button
-                                            className="p-1 hover:bg-amber-100 rounded"
-                                            disabled={isSubmitting}
-                                        >
-                                            <Edit className="w-4 h-4 text-amber-600"/>
-                                        </button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Edit Item</DialogTitle>
-                                            <DialogDescription>Update the title and description of this
-                                                item.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="py-4 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-analog-title"
-                                                       className="text-amber-900 font-semibold">Title</Label>
-                                                <Input
-                                                    id="edit-analog-title"
-                                                    placeholder="Enter item title..."
-                                                    value={editItemTitle}
-                                                    onChange={(e) => setEditItemTitle(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-analog-description"
-                                                       className="text-amber-900 font-semibold">Description
-                                                    (Optional)</Label>
-                                                <Textarea
-                                                    id="edit-analog-description"
-                                                    placeholder="Enter item description..."
-                                                    value={editItemDescription}
-                                                    onChange={(e) => setEditItemDescription(e.target.value)}
-                                                    rows={3}
-                                                    className="resize-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <DialogClose asChild>
-                                                <Button variant="outline">Cancel</Button>
-                                            </DialogClose>
-                                            <Button
-                                                onClick={handleEditItem}
-                                                disabled={isSubmitting || !editItemTitle.trim()}
-                                                className="bg-amber-600 hover:bg-amber-700"
-                                            >
-                                                Save Changes
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                {/* Delete item button */}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <button
-                                            className="p-1 hover:bg-red-100 rounded"
-                                            disabled={isSubmitting}
-                                        >
-                                            <X className="w-4 h-4 text-red-500"/>
-                                        </button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{item.title}"? This will also remove
-                                                any associated data.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={() => handleDeleteItem(item.id)}
-                                                className="bg-red-600 hover:bg-red-700"
-                                            >
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-                {/* Add analog item button */}
-                <Dialog
-                    open={addingItemTo?.categoryId === categoryData.category.id && addingItemTo?.type === "analog"}
-                    onOpenChange={(open) => !open && setAddingItemTo(null)}
-                >
-                    <DialogTrigger asChild>
-                        <button
-                            onClick={() => setAddingItemTo({categoryId: categoryData.category.id, type: "analog"})}
-                            className="mt-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 hover:bg-amber-50 px-2 py-1 rounded transition-colors"
-                        >
-                            <Plus className="w-3 h-3"/> Add analog item
-                        </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add Analog Item</DialogTitle>
-                            <DialogDescription>Create a new analog method item for this category.</DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="analog-title" className="text-amber-900 font-semibold">Title</Label>
-                                <Input
-                                    id="analog-title"
-                                    placeholder="Enter item title..."
-                                    value={newItemTitle}
-                                    onChange={(e) => setNewItemTitle(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="analog-description" className="text-amber-900 font-semibold">Description
-                                    (Optional)</Label>
-                                <Textarea
-                                    id="analog-description"
-                                    placeholder="Enter item description..."
-                                    value={newItemDescription}
-                                    onChange={(e) => setNewItemDescription(e.target.value)}
-                                    rows={3}
-                                    className="resize-none"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="outline">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                onClick={handleAddItem}
-                                disabled={isSubmitting || !newItemTitle.trim()}
-                                className="bg-amber-600 hover:bg-amber-700"
-                            >
-                                Add Item
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </td>
-
-            {/* Digital Items */}
-            <td className="border border-amber-300 p-4 align-top">
-                <ul className="space-y-2">
-                    {categoryData.digitalItems.map((item) => (
-                        <li key={item.id} className="flex items-start gap-2 group/item">
-                            <Link
-                                href={`/project/${projectId}/item/${item.id}`}
-                                className="flex items-start gap-2 hover:bg-amber-50 p-1 rounded flex-1"
-                            >
-                                <div
-                                    className={`w-5 h-5 border-2 shrink-0 flex items-center justify-center mt-0.5 ${
-                                        item.is_completed ? "bg-green-500 border-green-500" : "border-amber-400"
-                                    }`}
-                                >
-                                    {item.is_completed && <Check className="w-3 h-3 text-white"/>}
-                                </div>
-                                <span
-                                    className={`text-sm hover:text-amber-700 ${
-                                        item.is_completed ? "text-green-700" : "text-amber-800"
-                                    }`}
-                                >
-                          {item.title}
-                        </span>
-                            </Link>
-                            <div
-                                className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
-                                {/* Edit item button */}
-                                <Dialog
-                                    open={editingItem?.id === item.id}
-                                    onOpenChange={(open) => {
-                                        if (open) {
-                                            setEditingItem({
-                                                id: item.id,
-                                                title: item.title,
-                                                description: item.description
-                                            })
-                                            setEditItemTitle(item.title)
-                                            setEditItemDescription(item.description || "")
-                                        } else {
-                                            setEditingItem(null)
-                                            setEditItemTitle("")
-                                            setEditItemDescription("")
-                                        }
-                                    }}
-                                >
-                                    <DialogTrigger asChild>
-                                        <button
-                                            className="p-1 hover:bg-amber-100 rounded"
-                                            disabled={isSubmitting}
-                                        >
-                                            <Edit className="w-4 h-4 text-amber-600"/>
-                                        </button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Edit Item</DialogTitle>
-                                            <DialogDescription>Update the title and description of this
-                                                item.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="py-4 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-digital-title"
-                                                       className="text-amber-900 font-semibold">Title</Label>
-                                                <Input
-                                                    id="edit-digital-title"
-                                                    placeholder="Enter item title..."
-                                                    value={editItemTitle}
-                                                    onChange={(e) => setEditItemTitle(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-digital-description"
-                                                       className="text-amber-900 font-semibold">Description
-                                                    (Optional)</Label>
-                                                <Textarea
-                                                    id="edit-digital-description"
-                                                    placeholder="Enter item description..."
-                                                    value={editItemDescription}
-                                                    onChange={(e) => setEditItemDescription(e.target.value)}
-                                                    rows={3}
-                                                    className="resize-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <DialogClose asChild>
-                                                <Button variant="outline">Cancel</Button>
-                                            </DialogClose>
-                                            <Button
-                                                onClick={handleEditItem}
-                                                disabled={isSubmitting || !editItemTitle.trim()}
-                                                className="bg-amber-600 hover:bg-amber-700"
-                                            >
-                                                Save Changes
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                {/* Delete item button */}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <button
-                                            className="p-1 hover:bg-red-100 rounded"
-                                            disabled={isSubmitting}
-                                        >
-                                            <X className="w-4 h-4 text-red-500"/>
-                                        </button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{item.title}"? This will also remove
-                                                any associated data.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={() => handleDeleteItem(item.id)}
-                                                className="bg-red-600 hover:bg-red-700"
-                                            >
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-                {/* Add digital item button */}
-                <Dialog
-                    open={addingItemTo?.categoryId === categoryData.category.id && addingItemTo?.type === "digital"}
-                    onOpenChange={(open) => !open && setAddingItemTo(null)}
-                >
-                    <DialogTrigger asChild>
-                        <button
-                            onClick={() => setAddingItemTo({categoryId: categoryData.category.id, type: "digital"})}
-                            className="mt-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 hover:bg-amber-50 px-2 py-1 rounded transition-colors"
-                        >
-                            <Plus className="w-3 h-3"/> Add digital item
-                        </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add Digital Item</DialogTitle>
-                            <DialogDescription>Create a new digital method item for this category.</DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="digital-title" className="text-amber-900 font-semibold">Title</Label>
-                                <Input
-                                    id="digital-title"
-                                    placeholder="Enter item title..."
-                                    value={newItemTitle}
-                                    onChange={(e) => setNewItemTitle(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="digital-description" className="text-amber-900 font-semibold">Description
-                                    (Optional)</Label>
-                                <Textarea
-                                    id="digital-description"
-                                    placeholder="Enter item description..."
-                                    value={newItemDescription}
-                                    onChange={(e) => setNewItemDescription(e.target.value)}
-                                    rows={3}
-                                    className="resize-none"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="outline">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                onClick={handleAddItem}
-                                disabled={isSubmitting || !newItemTitle.trim()}
-                                className="bg-amber-600 hover:bg-amber-700"
-                            >
-                                Add Item
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </td>
-        </tr>
-    )
 
     return (
-        <div className="overflow-x-auto space-y-6">
-            {/* Predefined Categories Table */}
-            <div>
-                <h2 className="text-lg font-semibold text-amber-900 mb-2">Standard Categories</h2>
-                <table className="w-full border-collapse border border-amber-300 bg-white">
-                    <thead>
-                    <tr className="bg-amber-100">
-                        <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold w-16">Category</th>
-                        <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold">
-                            <div>Analog Methods</div>
-                            <div className="text-xs font-normal text-amber-700">(Sanoff, 2000)</div>
-                        </th>
-                        <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold">
-                            <div>Digital Methods</div>
-                            <div className="text-xs font-normal text-amber-700">(Atzmanstorfer et al., 2025)</div>
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {predefinedCategories.map((categoryData) => renderCategoryRow(categoryData, false))}
-                    </tbody>
-                </table>
-            </div>
+        <div className="space-y-6">
+            {customCategories.map((categoryData) => {
+                const allItems = [...categoryData.analogItems, ...categoryData.digitalItems]
+                
+                return (
+                    <div key={categoryData.category.id} className="bg-white border border-amber-200 rounded-lg p-6 shadow-sm">
+                        {/* Category Header */}
+                        <div className="mb-4">
+                            <h3 className="text-xl font-bold text-amber-900 mb-2">
+                                {categoryData.category.name}
+                            </h3>
+                        </div>
 
-            {/* Custom Categories Table - Always show with add button */}
-            <div>
-                <h2 className="text-lg font-semibold text-amber-900 mb-2">Custom Categories</h2>
-                <table className="w-full border-collapse border border-amber-300 bg-white">
-                    {customCategories.length > 0 && (
-                        <>
-                            <thead>
-                            <tr className="bg-amber-100">
-                                <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold w-16">Category</th>
-                                <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold">
-                                    Analog Methods
-                                </th>
-                                <th className="border border-amber-300 px-4 py-2 text-left text-amber-900 font-semibold">
-                                    Digital Methods
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {customCategories.map((categoryData) => renderCategoryRow(categoryData, true))}
-                            </tbody>
-                        </>
-                    )}
-                    {/* Add New Category/Section Row */}
-                    <tbody>
-                    <tr>
-                        <td className="border border-amber-300 bg-amber-200 p-2 w-16"></td>
-                        <td className="border border-amber-300 p-4" colSpan={2}>
-                            <Dialog open={isAddingCategory} onOpenChange={setIsAddingCategory}>
+                        {/* Sub-items */}
+                        <div className="space-y-2">
+                            {allItems.map((item, itemIndex) => {
+                                const letter = String.fromCharCode(65 + itemIndex)
+                                
+                                return (
+                                    <div key={item.id} className="flex items-start gap-3 group">
+                                        <button
+                                            onClick={() => handleToggleCompletion(item.id, item.is_completed)}
+                                            className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors ${
+                                                item.is_completed
+                                                    ? 'bg-green-600 border-green-600 text-white'
+                                                    : 'border-amber-400 text-amber-600 hover:bg-amber-50'
+                                            }`}
+                                            disabled={isSubmitting}
+                                        >
+                                            {item.is_completed ? <Check className="w-4 h-4" /> : letter}
+                                        </button>
+                                        
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-amber-900">
+                                                    ({letter}) {item.title}
+                                                </span>
+                                                {item.item_type && (
+                                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                                        item.item_type === 'analog' 
+                                                            ? 'bg-blue-100 text-blue-800' 
+                                                            : 'bg-purple-100 text-purple-800'
+                                                    }`}>
+                                                        {item.item_type}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {item.description && (
+                                                <p className="text-sm text-amber-600 mt-1">{item.description}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Dialog
+                                                open={editingItem?.id === item.id}
+                                                onOpenChange={(open) => {
+                                                    if (open) {
+                                                        setEditingItem({
+                                                            id: item.id,
+                                                            title: item.title,
+                                                            description: item.description
+                                                        })
+                                                        setEditItemTitle(item.title)
+                                                        setEditItemDescription(item.description || "")
+                                                    } else {
+                                                        setEditingItem(null)
+                                                        setEditItemTitle("")
+                                                        setEditItemDescription("")
+                                                    }
+                                                }}
+                                            >
+                                                <DialogTrigger asChild>
+                                                    <button className="p-1 hover:bg-amber-100 rounded" disabled={isSubmitting}>
+                                                        <Edit className="w-4 h-4 text-amber-600"/>
+                                                    </button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle>Edit Item</DialogTitle>
+                                                        <DialogDescription>Update the title and description of this item.</DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="py-4 space-y-4">
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="edit-title" className="text-amber-900 font-semibold">Title</Label>
+                                                            <Input
+                                                                id="edit-title"
+                                                                placeholder="Enter item title..."
+                                                                value={editItemTitle}
+                                                                onChange={(e) => setEditItemTitle(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="edit-description" className="text-amber-900 font-semibold">Description (Optional)</Label>
+                                                            <Textarea
+                                                                id="edit-description"
+                                                                placeholder="Enter item description..."
+                                                                value={editItemDescription}
+                                                                onChange={(e) => setEditItemDescription(e.target.value)}
+                                                                rows={3}
+                                                                className="resize-none"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <DialogFooter>
+                                                        <DialogClose asChild>
+                                                            <Button variant="outline">Cancel</Button>
+                                                        </DialogClose>
+                                                        <Button
+                                                            onClick={handleEditItem}
+                                                            disabled={isSubmitting || !editItemTitle.trim()}
+                                                            className="bg-amber-600 hover:bg-amber-700"
+                                                        >
+                                                            Save Changes
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
+
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <button className="p-1 hover:bg-red-100 rounded" disabled={isSubmitting}>
+                                                        <Trash2 className="w-4 h-4 text-red-600"/>
+                                                    </button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDeleteItem(item.id)}
+                                                            className="bg-red-600 hover:bg-red-700"
+                                                        >
+                                                            Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Add new item button */}
+                        <div className="mt-4 pt-4 border-t border-amber-200">
+                            <Dialog open={addingItemTo === categoryData.category.id} onOpenChange={(open) => {
+                                setAddingItemTo(open ? categoryData.category.id : null)
+                                if (!open) {
+                                    setNewItemTitle("")
+                                    setNewItemDescription("")
+                                }
+                            }}>
                                 <DialogTrigger asChild>
-                                    <button
-                                        className="flex items-center gap-2 text-amber-700 hover:text-amber-900 font-medium">
-                                        <Plus className="w-4 h-4"/> Add New Section
+                                    <button 
+                                        className="flex items-center gap-2 text-amber-700 hover:text-amber-900 font-medium text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        <Plus className="w-4 h-4"/> Add item to this category
                                     </button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Add New Section/Category</DialogTitle>
-                                        <DialogDescription>Create a new custom category section for your
-                                            project.</DialogDescription>
+                                        <DialogTitle>Add Item</DialogTitle>
+                                        <DialogDescription>Create a new item for {categoryData.category.name}.</DialogDescription>
                                     </DialogHeader>
-                                    <div className="py-4">
-                                        <Input
-                                            placeholder="Enter section name (e.g., MONITORING)..."
-                                            value={newCategoryName}
-                                            onChange={(e) => setNewCategoryName(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-                                        />
+                                    <div className="py-4 space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="item-title" className="text-amber-900 font-semibold">Title</Label>
+                                            <Input
+                                                id="item-title"
+                                                placeholder="Enter item title..."
+                                                value={newItemTitle}
+                                                onChange={(e) => setNewItemTitle(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="item-description" className="text-amber-900 font-semibold">Description (Optional)</Label>
+                                            <Textarea
+                                                id="item-description"
+                                                placeholder="Enter item description..."
+                                                value={newItemDescription}
+                                                onChange={(e) => setNewItemDescription(e.target.value)}
+                                                rows={3}
+                                                className="resize-none"
+                                            />
+                                        </div>
                                     </div>
                                     <DialogFooter>
                                         <DialogClose asChild>
                                             <Button variant="outline">Cancel</Button>
                                         </DialogClose>
                                         <Button
-                                            onClick={handleAddCategory}
-                                            disabled={isSubmitting || !newCategoryName.trim()}
+                                            onClick={handleAddItem}
+                                            disabled={isSubmitting || !newItemTitle.trim()}
                                             className="bg-amber-600 hover:bg-amber-700"
                                         >
-                                            Add Section
+                                            Add Item
                                         </Button>
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                        </div>
+
+                        {/* Delete category button for custom categories */}
+                        <div className="mt-4 pt-4 border-t border-amber-200">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <button className="flex items-center gap-2 text-red-700 hover:text-red-900 font-medium text-sm">
+                                        <Trash2 className="w-4 h-4"/> Delete Category
+                                    </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Are you sure you want to delete the "{categoryData.category.name}" category? 
+                                            This will also delete all items in this category for this project. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handleDeleteCategory(categoryData.category.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            Delete Category
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                )
+            })}
+
+            {/* Add New Category Section */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                <Dialog open={isAddingCategory} onOpenChange={setIsAddingCategory}>
+                    <DialogTrigger asChild>
+                        <button className="flex items-center gap-2 text-amber-700 hover:text-amber-900 font-medium">
+                            <Plus className="w-5 h-5"/> Add New Category
+                        </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Category</DialogTitle>
+                            <DialogDescription>Create a new custom category for your project.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <Input
+                                placeholder="Enter category name (e.g., MONITORING)..."
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <Button
+                                onClick={handleAddCategory}
+                                disabled={isSubmitting || !newCategoryName.trim()}
+                                className="bg-amber-600 hover:bg-amber-700"
+                            >
+                                Add Category
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     )

@@ -254,9 +254,9 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                         </div>
                     )}
 
-                    {/* Activity Description */}
+                    {/* Activity Description */}INTEGRATED BUILDING PROCESS
                     <div className="space-y-2">
-                        <Label className="text-amber-900 font-semibold">Activity</Label>
+                        <Label className="text-amber-900 font-semibold">Participent</Label>
                         <div className="border border-amber-300 rounded-md p-3 bg-white min-h-20">
                             <p className="text-sm text-amber-900 whitespace-pre-wrap">{activity || "No activity description"}</p>
                         </div>
@@ -371,73 +371,73 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                             <table className="w-full border-collapse border border-amber-300">
                                 <thead>
                                 <tr className="bg-amber-100">
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Activity</th>
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Description</th>
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">No.
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">Activity</th>
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">Description</th>
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">No.
                                         of participates
                                     </th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Attend(f<sub>a</sub>)</td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Attending meetings or
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Attend(f<sub>a</sub>)</td>
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Attending meetings or
                                         events without active contribution
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                                        <div className="px-2 py-1 text-sm text-amber-900">{fa || "-"}</div>
+                                        <div className="px-2 py-1 text-base text-amber-900">{fa || "-"}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Consult(f<sub>c</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Consult(f<sub>c</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Providing opinions,
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Providing opinions,
                                         feedback, or suggestions
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                                        <div className="px-2 py-1 text-sm text-amber-900">{fc || "-"}</div>
+                                        <div className="px-2 py-1 text-base text-amber-900">{fc || "-"}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Work/Involve(f<sub>i</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Work/Involve(f<sub>i</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Participating in project
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Participating in project
                                         activities or tasks
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                                        <div className="px-2 py-1 text-sm text-amber-900">{fi || "-"}</div>
+                                        <div className="px-2 py-1 text-base text-amber-900">{fi || "-"}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Collaborate(f<sub>col</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Collaborate(f<sub>col</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Working jointly with
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Working jointly with
                                         project leaders or committees in decision-making
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                                        <div className="px-2 py-1 text-sm text-amber-900">{fcol || "-"}</div>
+                                        <div className="px-2 py-1 text-base text-amber-900">{fcol || "-"}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Empower/Lead(f<sub>emp</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Empower/Lead(f<sub>emp</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Taking leadership roles
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Taking leadership roles
                                         and making decisions independently
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-50">
-                                        <div className="px-2 py-1 text-sm text-amber-900">{femp || "-"}</div>
+                                        <div className="px-2 py-1 text-base text-amber-900">{femp || "-"}</div>
                                     </td>
                                 </tr>
                                 <tr className="bg-amber-50">
-                                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total number
+                                    <td className="border border-amber-300 px-3 py-2 text-base font-semibold">Total number
                                         of respondents (N)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total
+                                    <td className="border border-amber-300 px-3 py-2 text-base font-semibold">Total
                                         Participants
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-100">
                                         <div
-                                            className="px-2 py-1 text-sm text-amber-900 font-semibold">{calculateTotalN() || "-"}</div>
+                                            className="px-2 py-1 text-base text-amber-900 font-semibold">{calculateTotalN() || "-"}</div>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -532,7 +532,7 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                     {/* Activity Description */}
                     <div className="space-y-2">
                         <Label htmlFor="activity" className="text-amber-900 font-semibold">
-                            Activity :
+                            Participation :
                         </Label>
                         <Textarea
                             id="activity"
@@ -689,17 +689,17 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                             <table className="w-full border-collapse border border-amber-300">
                                 <thead>
                                 <tr className="bg-amber-100">
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Activity</th>
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">Description</th>
-                                    <th className="border border-amber-300 px-3 py-2 text-left text-sm text-amber-900">No.
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">Activity</th>
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">Description</th>
+                                    <th className="border border-amber-300 px-3 py-2 text-left text-base text-amber-900">No.
                                         of participates
                                     </th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Attend(f<sub>a</sub>)</td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Attending meetings or
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Attend(f<sub>a</sub>)</td>
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Attending meetings or
                                         events without active contribution
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2">
@@ -713,9 +713,9 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Consult(f<sub>c</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Consult(f<sub>c</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Providing opinions,
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Providing opinions,
                                         feedback, or suggestions
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2">
@@ -729,9 +729,9 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Work/Involve(f<sub>i</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Work/Involve(f<sub>i</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Participating in project
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Participating in project
                                         activities or tasks
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2">
@@ -745,9 +745,9 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Collaborate(f<sub>col</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Collaborate(f<sub>col</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Working jointly with
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Working jointly with
                                         project leaders or committees in decision-making
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2">
@@ -761,9 +761,9 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Empower/Lead(f<sub>emp</sub>)
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Empower/Lead(f<sub>emp</sub>)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm">Taking leadership roles
+                                    <td className="border border-amber-300 px-3 py-2 text-base">Taking leadership roles
                                         and making decisions independently
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2">
@@ -777,15 +777,15 @@ export function ItemDetailForm({item, projectId, existingDetails}: ItemDetailFor
                                     </td>
                                 </tr>
                                 <tr className="bg-amber-50">
-                                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total number
+                                    <td className="border border-amber-300 px-3 py-2 text-base font-semibold">Total number
                                         of respondents (N)
                                     </td>
-                                    <td className="border border-amber-300 px-3 py-2 text-sm font-semibold">Total
+                                    <td className="border border-amber-300 px-3 py-2 text-base font-semibold">Total
                                         Participants
                                     </td>
                                     <td className="border border-amber-300 px-3 py-2 bg-amber-100">
                                         <div
-                                            className="px-2 py-1 text-sm text-amber-900 font-semibold h-8 flex items-center">{calculateTotalN() || "0"}</div>
+                                            className="px-2 py-1 text-base text-amber-900 font-semibold h-8 flex items-center">{calculateTotalN() || "0"}</div>
                                     </td>
                                 </tr>
                                 </tbody>

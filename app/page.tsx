@@ -383,7 +383,7 @@ export default function HomePage() {
                             <table className="w-full border-collapse border border-border rounded-lg">
                                 <thead>
                                 <tr className="bg-muted">
-                                    <th className="border border-border px-4 py-2 text-left text-foreground font-semibold">Activity</th>
+                                    <th className="border border-border px-4 py-2 text-left text-foreground font-semibold">Participent</th>
                                     <th className="border border-border px-4 py-2 text-left text-foreground font-semibold">
                                         Description
                                     </th>
